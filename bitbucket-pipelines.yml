@@ -1,0 +1,115 @@
+image:
+  name: 'python:3.8'
+deploy:
+  - step: &deploy
+      caches:
+        - pip
+      script:
+        - pip install -U awscli==1.19.8
+        - aws configure set default.region $AWS_DEFAULT_REGION
+        - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+        - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+        - >-
+          export DATABASES_LAYER_ARN=$(aws lambda list-layer-versions
+          --layer-name $DATABASES_LAYER_NAME --query 'max_by(LayerVersions,
+          &Version).LayerVersionArn' --output text)
+        - >-
+          export REQUESTS_LAYER_ARN=$(aws lambda list-layer-versions
+          --layer-name $REQUESTS_LAYER_NAME --query 'max_by(LayerVersions,
+          &Version).LayerVersionArn' --output text)
+        - >-
+          export PILLOW_LAYER_ARN=$(aws lambda list-layer-versions
+          --layer-name $PILLOW_LAYER_NAME --query 'max_by(LayerVersions,
+          &Version).LayerVersionArn' --output text)
+        - pipe: 'atlassian/aws-sam-deploy:0.5.2'
+          variables:
+            AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+            AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+            AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+            S3_BUCKET: $S3_BUCKET
+            STACK_NAME: $STACK_NAME
+            CAPABILITIES:
+              - CAPABILITY_IAM
+              - CAPABILITY_NAMED_IAM
+              - CAPABILITY_AUTO_EXPAND
+            SAM_TEMPLATE: template.yaml
+            STACK_PARAMETERS: |
+              [
+                {
+                  'ParameterKey': 'PostgreSQLUsername',
+                  'ParameterValue': '${POSTGRESQL_USERNAME}'
+                },
+                {
+                  'ParameterKey': 'PostgreSQLPassword',
+                  'ParameterValue': '${POSTGRESQL_PASSWORD}'
+                },
+                {
+                  'ParameterKey': 'PostgreSQLHost',
+                  'ParameterValue': '${POSTGRESQL_HOST}'
+                },
+                {
+                  'ParameterKey': 'PostgreSQLPort',
+                  'ParameterValue': '${POSTGRESQL_PORT}'
+                },
+                {
+                  'ParameterKey': 'PostgreSQLDBName',
+                  'ParameterValue': '${POSTGRESQL_DB_NAME}'
+                },
+                {
+                  'ParameterKey': 'StageName',
+                  'ParameterValue': '${STAGE_NAME}'
+                },
+                {
+                  'ParameterKey': 'EnvironmentName',
+                  'ParameterValue': '${ENVIRONMENT_NAME}'
+                },
+                {
+                  'ParameterKey': 'Auth0Domain',
+                  'ParameterValue': '${AUTH0_DOMAIN}'
+                },
+                {
+                  'ParameterKey': 'Auth0Audience',
+                  'ParameterValue': '${AUTH0_AUDIENCE}'
+                },
+                {
+                  'ParameterKey': 'AppsyncCoreApiUrl',
+                  'ParameterValue': '${APPSYNC_CORE_API_URL}'
+                },
+                {
+                  'ParameterKey': 'AppsyncCoreApiKey',
+                  'ParameterValue': '${APPSYNC_CORE_API_KEY}'
+                },
+                {
+                  'ParameterKey': 'InstagramBotVerifyToken',
+                  'ParameterValue': '${INSTAGRAM_BOT_VERIFY_TOKEN}'
+                },
+                {
+                  'ParameterKey': 'DatabasesLayerARN',
+                  'ParameterValue': '${DATABASES_LAYER_ARN}'
+                },
+                {
+                  'ParameterKey': 'RequestsLayerARN',
+                  'ParameterValue': '${REQUESTS_LAYER_ARN}'
+                },
+                {
+                  'ParameterKey': 'PillowLayerARN',
+                  'ParameterValue': '${PILLOW_LAYER_ARN}'
+                },
+                {
+                  'ParameterKey': 'FileStorageServiceUrl',
+                  'ParameterValue': '${FILE_STORAGE_SERVICE_URL}'
+                }
+              ]
+            WAIT: 'true'
+            WAIT_INTERVAL: 60
+            DEBUG: 'true'
+pipelines:
+  branches:
+    develop:
+      - step:
+          <<: *deploy
+          deployment: develop
+    master:
+      - step:
+          <<: *deploy
+          deployment: master

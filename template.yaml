@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Parameters:
+  PostgreSQLUsername:
+    Type: String
+  PostgreSQLPassword:
+    Type: String
+  PostgreSQLHost:
+    Type: String
+  PostgreSQLPort:
+    Type: Number
+  PostgreSQLDBName:
+    Type: String
+  StageName:
+    Type: String
+  EnvironmentName:
+    Type: String
+  Auth0Domain:
+    Type: String
+  Auth0Audience:
+    Type: String
+  AppsyncCoreApiUrl:
+    Type: String
+  AppsyncCoreApiKey:
+    Type: String
+  InstagramBotVerifyToken:
+    Type: String
+  DatabasesLayerARN:
+    Type: String
+  RequestsLayerARN:
+    Type: String
+  PillowLayerARN:
+    Type: String
+  FileStorageServiceUrl:
+    Type: String
+Globals:
+  Function:
+    Runtime: python3.8
+    MemorySize: 10240
+    Timeout: 900
+    Environment:
+      Variables:
+        POSTGRESQL_USERNAME:
+          'Fn::Sub': '${PostgreSQLUsername}'
+        POSTGRESQL_PASSWORD:
+          'Fn::Sub': '${PostgreSQLPassword}'
+        POSTGRESQL_HOST:
+          'Fn::Sub': '${PostgreSQLHost}'
+        POSTGRESQL_PORT:
+          'Fn::Sub': '${PostgreSQLPort}'
+        POSTGRESQL_DB_NAME:
+          'Fn::Sub': '${PostgreSQLDBName}'
+        APPSYNC_CORE_API_URL:
+          'Fn::Sub': '${AppsyncCoreApiUrl}'
+        APPSYNC_CORE_API_KEY:
+          'Fn::Sub': '${AppsyncCoreApiKey}'
+        FILE_STORAGE_SERVICE_URL:
+          'Fn::Sub': '${FileStorageServiceUrl}'
+Resources:
+  InstagramApiGateway:
+    Type: 'AWS::Serverless::HttpApi'
+    Properties:
+      StageName:
+        'Fn::Sub': '${StageName}'
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+          - POST
+        AllowHeaders:
+          - '*'
+        AllowOrigins:
+          - '*'
+      Auth:
+        Authorizers:
+          Auth0Authorizer:
+            JwtConfiguration:
+              issuer:
+                'Fn::Sub': '${Auth0Domain}'
+              audience:
+                - 'Fn::Sub': '${Auth0Audience}'
+            IdentitySource: $request.header.Authorization
+  SendMessageFromInstagram:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName:
+        'Fn::Sub': '${EnvironmentName}SendMessageFromInstagram'
+      CodeUri: src/aws_lambda_functions/send_message_from_instagram
+      Handler: lambda_function.lambda_handler
+      Events:
+        InstagramApiGatewayGetRequest:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: InstagramApiGateway
+            Path: '/'
+            Method: GET
+        InstagramApiGatewayPostRequest:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: InstagramApiGateway
+            Path: '/'
+            Method: POST
+      Environment:
+        Variables:
+          INSTAGRAM_BOT_VERIFY_TOKEN:
+            'Fn::Sub': '${InstagramBotVerifyToken}'
+      Layers:
+        - 'Fn::Sub': '${DatabasesLayerARN}'
+        - 'Fn::Sub': '${RequestsLayerARN}'
+        - 'Fn::Sub': '${PillowLayerARN}'
