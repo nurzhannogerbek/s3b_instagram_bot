@@ -109,3 +109,63 @@ Resources:
         - 'Fn::Sub': '${DatabasesLayerARN}'
         - 'Fn::Sub': '${RequestsLayerARN}'
         - 'Fn::Sub': '${PillowLayerARN}'
+  SendMessageToInstagram:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName:
+        'Fn::Sub': '${EnvironmentName}SendMessageToInstagram'
+      CodeUri: src/aws_lambda_functions/send_message_to_instagram
+      Handler: lambda_function.lambda_handler
+      Events:
+        InstagramApiGateway:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: InstagramApiGateway
+            Path: /send_message_to_instagram
+            Method: POST
+            Auth:
+              Authorizer: Auth0Authorizer
+      Layers:
+        - 'Fn::Sub': '${DatabasesLayerARN}'
+        - 'Fn::Sub': '${RequestsLayerARN}'
+  SendNotificationToInstagram:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName:
+        'Fn::Sub': '${EnvironmentName}SendNotificationToInstagram'
+      CodeUri: src/aws_lambda_functions/send_notification_to_instagram
+      Handler: lambda_function.lambda_handler
+      Events:
+        InstagramApiGateway:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: InstagramApiGateway
+            Path: /send_notification_to_instagram
+            Method: POST
+            Auth:
+              Authorizer: Auth0Authorizer
+      Layers:
+        - 'Fn::Sub': '${DatabasesLayerARN}'
+        - 'Fn::Sub': '${RequestsLayerARN}'
+  SendTemplateToInstagram:
+      Type: AWS::Serverless::Function
+      Properties:
+          FunctionName:
+              Fn::Sub: "${EnvironmentName}SendTemplateToInstagram"
+          CodeUri: src/aws_lambda_functions/send_template_to_instagram
+          Handler: lambda_function.lambda_handler
+          Events:
+              InstagramApiGatewayEvent:
+                  Type: HttpApi
+                  Properties:
+                      ApiId:
+                          Ref: InstagramApiGateway
+                      Path: /send_template_to_instagram
+                      Method: POST
+                      Auth:
+                          Authorizer: Auth0Authorizer
+          Layers:
+              - Fn::Sub: "${DatabasesLayerARN}"
+              - Fn::Sub: "${RequestsLayerARN}"
