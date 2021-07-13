@@ -362,7 +362,7 @@ def create_identified_user(**kwargs) -> AnyStr:
         user_profile_photo_url
     ) values (
         %(identified_user_id)s,
-        %(user_profile_photo_url)s,
+        %(user_profile_photo_url)s
     )
     returning
         user_id::text;
