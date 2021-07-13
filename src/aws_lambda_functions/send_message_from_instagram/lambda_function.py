@@ -333,7 +333,7 @@ def create_identified_user(**kwargs) -> AnyStr:
         metadata,
         instagram_profile,
         instagram_bsid
-    ) values(
+    ) values (
         %(metadata)s,
         %(instagram_profile)s,
         %(instagram_bsid)s
@@ -353,9 +353,20 @@ def create_identified_user(**kwargs) -> AnyStr:
 
     # Define the id of the created identified user.
     sql_arguments["identified_user_id"] = cursor.fetchone()["identified_user_id"]
+    sql_arguments["user_profile_photo_url"] = response.json().get("profile_pic", None)
 
     # Prepare the SQL query that creates the user.
-    sql_statement = "insert into users(identified_user_id) values(%(identified_user_id)s) returning user_id::text;"
+    sql_statement = """
+    insert into users(
+        identified_user_id,
+        user_profile_photo_url
+    ) values (
+        %(identified_user_id)s,
+        %(user_profile_photo_url)s,
+    )
+    returning
+        user_id::text;
+    """
 
     # Execute the SQL query dynamically, in a convenient and safe way.
     try:
